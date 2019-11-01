@@ -1,0 +1,101 @@
+%!TEX root = poster.tex
+
+\tikzposterlatexaffectionproofoff
+\usetheme{Basic}
+
+% colours are picked from the southampton.ac.uk weebsite
+\definecolorstyle{Soton} {
+    \definecolor{colorOne}{HTML}{002e3b}    % dark blue-ish
+    \definecolor{colorTwo}{HTML}{005c84}    % blue-ish
+    \definecolor{colorThree}{HTML}{fcbc00}  % orange-ish
+}{
+    % Background Colors
+    \colorlet{backgroundcolor}{white}
+    \colorlet{framecolor}{colorOne}
+    % Title Colors
+    \colorlet{titlefgcolor}{white}
+    \colorlet{titlebgcolor}{colorOne}
+    % Block Colors
+    \colorlet{blocktitlebgcolor}{colorTwo}
+    \colorlet{blocktitlefgcolor}{white}
+    \colorlet{blockbodybgcolor}{white}
+    \colorlet{blockbodyfgcolor}{black}
+    % Innerblock Colors
+    \colorlet{innerblocktitlebgcolor}{white}
+    \colorlet{innerblocktitlefgcolor}{black}
+    \colorlet{innerblockbodybgcolor}{colorTwo!20!white}
+    \colorlet{innerblockbodyfgcolor}{black}
+    % Note colors
+    \colorlet{notefgcolor}{black}
+    \colorlet{notebgcolor}{colorTwo!50!white}
+    \colorlet{noteframecolor}{colorTwo}
+}
+
+% style the default blocks
+\defineblockstyle{Block}{
+    titlewidthscale=1, bodywidthscale=1, titleleft,
+    titleoffsetx=0pt, titleoffsety=0pt, bodyoffsetx=0pt, bodyoffsety=0pt,
+    bodyverticalshift=0pt, roundedcorners=0, linewidth=0pt, titleinnersep=1cm,
+    bodyinnersep=1cm
+}{
+    \ifBlockHasTitle%
+        \draw[draw=none, fill=blocktitlebgcolor]
+           (blocktitle.south west) rectangle (blocktitle.north east);
+    \fi%
+    \draw[draw=none, fill=blockbodybgcolor] %
+        (blockbody.north west) [rounded corners=0] -- (blockbody.south west) --
+        (blockbody.south east) [rounded corners=0]-- (blockbody.north east) -- cycle;
+}
+
+% style the TL;DR block
+\defineblockstyle{Emphasis}{
+    titlewidthscale=1, bodywidthscale=1, titleleft,
+    bodyverticalshift=0pt, roundedcorners=0, linewidth=0pt, titleinnersep=1cm,
+    bodyinnersep=1cm
+}{
+    \ifBlockHasTitle%
+        \draw[draw=colorTwo, fill=blocktitlebgcolor]
+           (blocktitle.south west) rectangle (blocktitle.north east);
+    \fi%
+    \draw[draw=none, fill=colorTwo] %
+        (blockbody.north west) [rounded corners=0] -- (blockbody.south west) --
+        (blockbody.south east) [rounded corners=0]-- (blockbody.north east) -- cycle;
+}
+
+% very simple title style
+\definetitlestyle{Simple}{
+    width=\paperwidth,
+    titletotopverticalspace=0mm,
+    titletoblockverticalspace=20mm,
+    innersep=1cm,
+}{
+    \draw[draw=none, fill=titlebgcolor]%
+    (\titleposleft,\titleposbottom) rectangle (\titleposright,\titlepostop); %
+}
+
+\usecolorstyle{Soton}
+\usetitlestyle{Simple}
+\useblockstyle{Block}
+\useinnerblockstyle[roundedcorners=0]{Default}
+
+% uncomment for long titles
+% % https://tex.stackexchange.com/questions/180234/how-can-i-make-my-title-wrap-in-a-tikzposter
+% \makeatletter
+% \def\title#1{\gdef\@title{\scalebox{\TP@titletextscale}{%
+%     \begin{minipage}[t]{0.4\linewidth}
+%         #1
+%         \par
+%         \end{minipage}%
+%     }}}
+% \makeatother
+
+% fix tikzlibrary{backgrounds}: https://tex.stackexchange.com/questions/236645/tikzposter-does-not-work-with-pgfplots/236672
+\pgfdeclarelayer{background}
+\pgfsetlayers{backgroundlayer,background,main,notelayer}
+
+
+% footnotes: https://tex.stackexchange.com/questions/350010/how-to-write-a-footnote-in-tikz-poster-class/350018
+\let\thempfootnote\thefootnote%http://tex.stackexchange.com/questions/956/footnotemark-and-footnotetext-in-minipage#959
+\newcommand\printfootnote[1]{% to get different numbers for different footnotes
+\addtocounter{footnote}{1}%
+\footnotetext{#1}}

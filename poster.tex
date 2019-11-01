@@ -1,0 +1,313 @@
+\documentclass[a0paper, landscape, 25pt]{tikzposter}
+
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{times}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{capt-of}
+\usepackage{qrcode}
+\usepackage{multirow}
+\usepackage{setspace}
+\usetikzlibrary{arrows.meta, positioning, calc}
+\input{template}
+\input{math_commands}
+\input{tikz}
+
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{DejaVuSansMono}
+\usepackage{FiraSans}
+
+
+\title{Deep Set Prediction Networks}
+\author{%
+    \textbf{Yan Zhang},
+    Jonathon Hare,
+    Adam Pr\"ugel-Bennett
+}
+\institute{University of Southampton}
+\titlegraphic{\includegraphics[scale=1.2]{uos}}
+
+
+\settitle{
+    \hspace*{1cm}
+    \textcolor{white}{\fontsize{90}{90} \sc \@title}
+    \hspace*{8cm}
+    \textcolor{white}{\LARGE \@author}
+    \hspace*{8cm}
+    \raisebox{-1cm}{\@titlegraphic}
+}
+
+\begin{document}
+    \maketitle
+
+
+    \begin{columns}
+
+
+
+        % left column
+        \column{0.333333333333}
+      
+        \block{Sets are unordered collections of things}{
+            \begin{itemize}
+                \item Many things can be described as \textbf{sets of feature vectors}:
+
+                \begin{itemize}
+                    \item the set of objects in an image,
+                    \item the set of points in a point cloud,
+                    \item the set of nodes and edges in a graph,
+                    \item the set of people reading this poster.
+                \end{itemize}
+
+                \item Predicting sets means object detection, molecule generation, etc.
+                \item This paper is about doing this \textbf{vector-to-set} mapping properly.
+                \item Compared to normal object detection methods:
+                \begin{itemize}
+                    \item Anchor-free, fully end-to-end, no post-processing.
+                \end{itemize}
+            \end{itemize}
+        }
+      
+        \block{MLPs are not suited for sets}{
+            \begin{itemize}
+                \item Sets are \textbf{unordered}, but MLP and RNN outputs are \textbf{ordered}.
+                \begin{itemize}
+                    \item[$\rightarrow$] \textbf{Discontinuities} from \emph{responsibility problem}.
+                \end{itemize}
+                \item Let's look at a normal set auto-encoder:
+            \end{itemize}
+
+            \vspace{0.5cm}
+            \begin{center}
+                \scalebox{3.3}{
+                    \begin{tikzpicture}
+                        \fontsize{10}{10}\selectfont
+                        \pic {ae};
+                    \end{tikzpicture}
+                }
+            \end{center}
+
+            \vspace{0.5cm}
+            \begin{itemize}
+                \item The responsibility problem:
+            \end{itemize}
+            \begin{center}
+                \hspace*{5mm}
+                \scalebox{4.0}{
+                    \begin{tikzpicture}
+                        \fontsize{10}{10}\selectfont
+                        \pic {symmetry};
+                    \end{tikzpicture}
+                }
+            \end{center}
+            \vspace{0.5cm}
+
+            \begin{itemize}
+                \item \textcolor{colorTwo}{(a)} and \textcolor{colorTwo}{(b)} are the same set.
+                \begin{itemize}
+                    \item[$\rightarrow$] \textcolor{colorTwo}{(a)} and \textcolor{colorTwo}{(b)} encode to the same vector.
+                    \item[$\rightarrow$] \textcolor{colorTwo}{(a)} and \textcolor{colorTwo}{(b)} have the same MLP output.
+                \end{itemize}
+                \item \textcolor{colorTwo}{(a)} is turned into \textcolor{colorTwo}{(b)} by rotating 90$\degree$.
+                \begin{itemize}
+                    \item[$\rightarrow$] Rotation starts and ends with the same set.
+                    \item[$\rightarrow$] MLP outputs can't just follow the 90$\degree$ rotation!
+                    \item[$\rightarrow$] There must be a \textcolor{red}{discontinuity} between \textcolor{colorTwo}{(c)} and \textcolor{colorTwo}{(d)}!\\
+                    All the outputs have to jump 90$\degree$ anti-clockwise.
+                \end{itemize}
+            \end{itemize}
+
+            \vspace{0.5cm}
+            Conclusion:
+            \begin{itemize}
+                \item Smooth change of set requires discontinuous change of MLP outputs.
+                \item To predict \textbf{unordered sets}, we should use an \textbf{unordered model}.
+            \end{itemize}
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+        % middle column
+        \column{0.333333333333}
+
+        % TL;DR of paper
+        \useblockstyle{Emphasis}
+        \block{ }{
+
+            \color{white}
+            \centering
+
+            % massive font size
+            \fontsize{70}{140}\selectfont
+            To \textbf{predict a set} from a vector,
+            use gradient descent to find a set
+            that \textbf{encodes} to that vector.
+
+        }
+        % back to normal blocks
+        \useblockstyle{Block}
+
+        \block[bodyoffsety=-10cm, titleoffsety=-10cm]{The idea}{
+            \begin{itemize}
+                \item \emph{Similar} set inputs encode to \emph{similar} feature vectors.
+                \item \emph{Different} set inputs encode to \emph{different} feature vectors.
+            \end{itemize}
+            $\rightarrow$ Minimise the difference between predicted and target set by minimising the difference between their feature vectors.
+
+            \vspace{1cm}
+            \begin{center}
+                \scalebox{2.9}{
+                    \begin{tikzpicture}
+                       \pic {mnist1};
+                    \end{tikzpicture}
+                }
+            \end{center}
+            \vspace{1cm}
+            \begin{center}
+                \scalebox{2.9}{
+                    \begin{tikzpicture}
+                        \pic {mnist2};
+                    \end{tikzpicture}
+                }
+            \end{center}
+            \vspace{1cm}
+            \begin{itemize}
+                \item Train (shared) encoder weights by minimising the \textcolor{colorThree!50!black}{set loss}.
+                \item Gradients of permutation-\emph{invariant} functions are \emph{equivariant}.
+                \begin{itemize}
+                    \item[$\rightarrow$] All gradient updates \textcolor{colorTwo}{$\partial \text{MSE} / \partial \text{set}$}  don't rely on the order of the set.
+                    \item[$\rightarrow$] Our model is completely \textbf{unordered}, exactly what we wanted!
+                \end{itemize}
+
+            \end{itemize}
+        }
+
+
+
+
+        % right column
+        \column{0.333333333333}
+
+        \block{Bounding box set prediction}{
+            \begin{center}
+                \setlength{\tabcolsep}{4mm}
+                \begin{tabular}{lccccc}
+                    \toprule
+                    Bounding box prediction & AP\textsubscript{50} & AP\textsubscript{90} & AP\textsubscript{95} & AP\textsubscript{98} & AP\textsubscript{99} \\
+                    \midrule
+                    MLP baseline        & 99.3\tiny$\pm$0.2 & 94.0\tiny$\pm$1.9 & 57.9\tiny$\pm$7.9 &  0.7\tiny$\pm$0.2 & 0.0\tiny$\pm$0.0 \\
+                    RNN baseline        & 99.4\tiny$\pm$0.2 & 94.9\tiny$\pm$2.0 & 65.0\tiny$\pm$10.3 &  2.4\tiny$\pm$0.0 & 0.0\tiny$\pm$0.0 \\
+                    \textbf{Ours} (train 10 steps, eval 10 steps) & 98.8\tiny$\pm$0.3 & 94.3\tiny$\pm$1.5 & 85.7\tiny$\pm$3.0 & \textbf{34.5}\tiny$\pm$5.7 & \textbf{2.9}\tiny$\pm$1.2 \\
+                    \textbf{Ours} (train 10 steps, eval 20 steps) & \textbf{99.8}\tiny$\pm$0.0 & \textbf{98.7}\tiny$\pm$1.1 & \textbf{86.2}\tiny$\pm$7.2 & 24.3\tiny$\pm$8.0 & 1.4\tiny$\pm$0.9 \\
+                    \textbf{Ours} (train 10 steps, eval 30 steps) & \textbf{99.8}\tiny$\pm$0.1 & 96.7\tiny$\pm$2.4 & 75.5\tiny$\pm$12.3 & 17.4\tiny$\pm$7.7 & 0.9\tiny$\pm$0.7 \\
+                    \bottomrule
+                \end{tabular}
+            \end{center}
+            \begin{center}
+                \scalebox{2.9}{
+                    \begin{tikzpicture}
+                        \pic {clevr1};
+                    \end{tikzpicture}
+                }
+            \end{center}
+
+            \begin{itemize}
+                \item Simply replace input encoder with ConvNet image encoder.
+                \item Add \textcolor{colorThree!50!black}{MSE loss} to \textcolor{colorThree!50!black}{set loss} when training the encoder and ResNet weights.
+                \begin{itemize}
+                    \item Forces minimisation of \textcolor{colorTwo}{MSE} to converge to something sensible.
+                \end{itemize}
+            \end{itemize}
+
+            \begin{center}
+                \scalebox{2.9}{
+                    \begin{tikzpicture}
+                        \node[inner sep=0] (y0) at (0, 0) {\includegraphics[scale=0.7, trim={3.5mm 3.5mm 3.5mm 3.5mm}, clip]{resources/clevr-15-2.pdf}};
+                        \node[inner sep=0] (y1) at (6, 0) {\includegraphics[scale=0.7, trim={3.5mm 3.5mm 3.5mm 3.5mm}, clip]{resources/clevr-15-6.pdf}};
+                        \node[inner sep=0] (y10) at (12, 0) {\includegraphics[scale=0.7, trim={3.5mm 3.5mm 3.5mm 3.5mm}, clip]{resources/clevr-15-10.pdf}};
+                        \node[inner sep=0] (y20) at (18, 0) {\includegraphics[scale=0.7, trim={3.5mm 3.5mm 3.5mm 3.5mm}, clip]{resources/clevr-15-20.pdf}};
+
+                        \node [scale=0.2, above = 0mm of y0] {Step 2};
+                        \node [scale=0.2, above = 0mm of y1] {Step 6};
+                        \node [scale=0.2, above = 0mm of y10] {Step 10};
+                        \node [scale=0.2, above = 0mm of y20] {Step 20};
+                    \end{tikzpicture}
+                }
+                \scalebox{2.9}{
+                    \begin{tikzpicture}
+                        \node[inner sep=0] (y0) at (0, 0) {\includegraphics[scale=0.7, trim={3.5mm 3.5mm 3.5mm 3.5mm}, clip]{resources/clevr-30-2.pdf}};
+                        \node[inner sep=0] (y1) at (6, 0) {\includegraphics[scale=0.7, trim={3.5mm 3.5mm 3.5mm 3.5mm}, clip]{resources/clevr-30-6.pdf}};
+                        \node[inner sep=0] (y10) at (12, 0) {\includegraphics[scale=0.7, trim={3.5mm 3.5mm 3.5mm 3.5mm}, clip]{resources/clevr-30-10.pdf}};
+                        \node[inner sep=0] (y20) at (18, 0) {\includegraphics[scale=0.7, trim={3.5mm 3.5mm 3.5mm 3.5mm}, clip]{resources/clevr-30-20.pdf}};
+                    \end{tikzpicture}
+                }
+            \end{center}
+        }
+
+        \block{Object detection}{
+            \begin{center}
+                \setlength{\tabcolsep}{4mm}
+                \begin{tabular}{lccccc}
+                    \toprule
+                    Object attribute prediction & AP\textsubscript{$\infty$} & AP\textsubscript{1} & AP\textsubscript{0.5} & AP\textsubscript{0.25} & AP\textsubscript{0.125}   \\
+                    \midrule
+                    MLP baseline & 3.6\tiny$\pm$0.5 & 1.5\tiny$\pm$0.4 & 0.8\tiny$\pm$0.3 & 0.2\tiny$\pm$0.1 & 0.0\tiny$\pm$0.0 \\
+                    RNN baseline & 4.0\tiny$\pm$1.9 & 1.8\tiny$\pm$1.2 & 0.9\tiny$\pm$0.5 & 0.2\tiny$\pm$0.1 & 0.0\tiny$\pm$0.0 \\
+                    \textbf{Ours} (train 10 steps, eval 10 steps) & 72.8\tiny$\pm$2.3 & 59.2\tiny$\pm$2.8 & 39.0\tiny$\pm$4.4 & 12.4\tiny$\pm$2.5 & 1.3\tiny$\pm$0.4 \\
+                    \textbf{Ours} (train 10 steps, eval 20 steps) & 84.0\tiny$\pm$4.5 & 80.0\tiny$\pm$4.9 & \textbf{57.0}\tiny$\pm$12.1 & \textbf{16.6}\tiny$\pm$9.0 & \textbf{1.6}\tiny$\pm$0.9 \\
+                    \textbf{Ours} (train 10 steps, eval 30 steps) & \textbf{85.2}\tiny$\pm$4.8 & \textbf{81.1}\tiny$\pm$5.2 & 47.4\tiny$\pm$17.6 & 10.8\tiny$\pm$9.0 & 0.6\tiny$\pm$0.7 \\
+                    \bottomrule
+                \end{tabular}
+            \end{center}
+
+
+            \vspace{0.5cm}
+            \begin{minipage}{0.75\linewidth}
+                \scriptsize
+                \setlength{\tabcolsep}{1.4mm}
+                \begin{tabular}{ccccc}
+                    \normalsize Input & \normalsize Step 5 & \normalsize Step 10 & \normalsize Step 20 & \normalsize Target\\
+                    \midrule
+                    \multirow{4}{*}{\includegraphics[width=0.36\linewidth, trim={0 0 8mm 0}, clip]{resources/img-0}}
+                    & x, y, z = (-0.14, 1.16, 3.57) & x, y, z = (-2.33, -2.41, 0.73) & x, y, z = (-2.33, -2.42, 0.78) & x, y, z = (-2.42, -2.40, 0.70) \\
+                    & large \textcolor{red}{purple} \textcolor{red}{rubber} \textcolor{red}{sphere} & large yellow metal cube & large yellow metal cube & large yellow metal cube \\\\
+                    & x, y, z = (0.01, 0.12, 3.42) & x, y, z = (-1.20, 1.27, 0.67) & x, y, z = (-1.21, 1.20, 0.65) & x, y, z = (-1.18, 1.25, 0.70)\\
+                    & large \textcolor{red}{gray} \textcolor{red}{metal} \textcolor{red}{cube} & large purple rubber sphere & large purple rubber sphere & large purple rubber sphere \\\\
+                    & x, y, z = (0.67, 0.65, 3.38) & x, y, z = (-0.96, 2.54, 0.36) & x, y, z = (-0.96, 2.59, 0.36) & x, y, z = (-1.02, 2.61, 0.35)\\
+                    & small \textcolor{red}{purple} \textcolor{red}{metal} \textcolor{red}{cube} & small gray rubber sphere & small gray rubber sphere & small gray rubber sphere \\\\
+                    & x, y, z = (0.67, 1.14, 2.96) & x, y, z = (1.61, 1.57, 0.36) & x, y, z = (1.58, 1.62, 0.38) & x, y, z = (1.74, 1.53, 0.35)\\
+                    & small purple \textcolor{red}{rubber} \textcolor{red}{sphere} & small \textcolor{red}{yellow} metal cube & small purple metal cube & small purple metal cube \\
+                \end{tabular}
+
+            \end{minipage}
+
+        }
+
+
+    \end{columns}
+
+    % QR code
+    \node [fill=white, inner sep=0] at (\paperwidth/2 - \paperwidth/3 - 4cm + 1.05cm, 8cm) {\textcolor{titlebgcolor}{\qrcode[height=3.07cm, padding]{https://github.com/Cyanogenoid/dspn}}};
+    \node [color=white, align=right] at (\paperwidth/2 - \paperwidth/3 - 16cm + 7mm, 7.33cm) {\large Code and pre-trained models available at\\\url{https://github.com/Cyanogenoid/dspn}};
+
+
+    % light blue bar behind the entire middle column to highlight it
+    \begin{scope}[on background layer]
+        \draw [fill=blocktitlebgcolor] (-\paperwidth/2 + \paperwidth/3, -\paperheight/2) rectangle ++(\paperwidth/3, \paperheight);
+    \end{scope}
+
+    % footer
+    % adjust height to fill out empty space at bottom to look nice
+    \draw [fill=titlebgcolor] (-\paperwidth/2, -\paperheight/2) rectangle ++(\paperwidth, 1.7cm);
+
+\end{document}
