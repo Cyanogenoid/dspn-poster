@@ -1,4 +1,4 @@
-# uos-poster-latex
+# dspn-poster
 
 This repo contains the LaTeX poster style I used for my [poster on Deep Set Prediction Networks](https://www.cyanogenoid.com/files/dspn-poster.pdf).
 It uses the tikzposter package and has a University of Southampton theme.
